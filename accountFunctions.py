@@ -4,7 +4,6 @@ ALL_STUDENT_ACCOUNTS = {}
 # Constants
 MAX_STUDENT_ACCOUNTS = 10
 
-# Function for creating an account
 def createAccount():
     if len(ALL_STUDENT_ACCOUNTS) >= MAX_STUDENT_ACCOUNTS:
         print("Sorry, the maximum number of accounts have been reached!")
@@ -29,105 +28,72 @@ def createAccount():
         'password': password,
         'firstName': firstName,
         'lastName': lastName,
-        'lastName': lastName,
         'university': university,
         'major': major,
         'friends': [],
+        'friendRequests': [],
         'Language': 'English',
         'SMS': True,
         'Email': True,
         'Advertising': True
-
     }
     print("Your Account has been created!\n")
     return firstName, lastName
 
-# Function checks if user is in the dictionary and checks corresponding password, returns true if found
 def checkUser(username, password):
-    if username in ALL_STUDENT_ACCOUNTS and ALL_STUDENT_ACCOUNTS[username]['password'] == password:
-        return True
-    else:
-        return False
+    return username in ALL_STUDENT_ACCOUNTS and ALL_STUDENT_ACCOUNTS[username]['password'] == password
 
-# Function checks if username is unique in the dictionary
 def checkUniqueUsername(username):
-    if username in ALL_STUDENT_ACCOUNTS:
-        return True
-    else:
-        return False
+    return username in ALL_STUDENT_ACCOUNTS
 
-# Checks if inputted password during creation is within our requirements
 def checkValidPassword(password):
     if 8 <= len(password) <= 12:
-        checkDigit = False
-        checkSpecialCharacter = False
-        checkUpperCase = False
+        checkDigit = any(char.isdigit() for char in password)
+        checkSpecialCharacter = any(char in "!@#$%^&*()_+[]:;<>,.?~" for char in password)
+        checkUpperCase = any(char.isupper() for char in password)
 
-        # Check if it has the password requirements
-        for x in password:
-            if x.isdigit():
-                checkDigit = True
-            elif x in "!@#$%^&*()_+[]:;<>,.?~":
-                checkSpecialCharacter = True
-            elif x.isupper():
-                checkUpperCase = True
-
-        # If all correct then it should return as 'true', if one of them is wrong the and statements turn false
         return checkUpperCase and checkDigit and checkSpecialCharacter
-    else:
-        return False
+    return False
 
-
-# Function to check InCollege membership by first name and last name *epic 2
 def checkForName(firstName, lastName):
-    for account, info in ALL_STUDENT_ACCOUNTS.items():
-        if info['firstName'] == firstName and info['lastName'] == lastName:
-            return True
+    return any(info['firstName'] == firstName and info['lastName'] == lastName for _, info in ALL_STUDENT_ACCOUNTS.items())
+
+def sendConnectionRequest(sender_username, receiver_username):
+    if receiver_username not in ALL_STUDENT_ACCOUNTS[sender_username]['friends'] and receiver_username not in ALL_STUDENT_ACCOUNTS[sender_username]['friendRequests']:
+
+
+
+        if sender_username in ALL_STUDENT_ACCOUNTS[receiver_username]['friendRequests']:
+            ALL_STUDENT_ACCOUNTS[sender_username]['friends'].append(receiver_username)
+            ALL_STUDENT_ACCOUNTS[receiver_username]['friends'].append(sender_username)
+            ALL_STUDENT_ACCOUNTS[receiver_username]['friendRequests'].remove(sender_username)
+            print(f"You are now connected with {ALL_STUDENT_ACCOUNTS[receiver_username]['firstName']} {ALL_STUDENT_ACCOUNTS[receiver_username]['lastName']}!")
         else:
-            return False
-
-
-# New dictionary to store pending friend requests
-PENDING_REQUESTS = {}
-
-# Function to send a connection request
-def sendConnectionRequest(username, friend_username):
-    if friend_username in ALL_STUDENT_ACCOUNTS and friend_username not in ALL_STUDENT_ACCOUNTS[username]['friends']:
-        # Check if a pending request already exists
-        if username not in PENDING_REQUESTS:
-            PENDING_REQUESTS[friend_username] = []
-
-        # Send the request and add it to the recipient's pending requests
-        PENDING_REQUESTS[friend_username].append(username)
-
-        print(f"Friend request sent to {ALL_STUDENT_ACCOUNTS[friend_username]['firstName']} {ALL_STUDENT_ACCOUNTS[friend_username]['lastName']}!")
+            ALL_STUDENT_ACCOUNTS[receiver_username]['friendRequests'].append(sender_username)
+            print(f"Connection request sent to {ALL_STUDENT_ACCOUNTS[receiver_username]['firstName']} {ALL_STUDENT_ACCOUNTS[receiver_username]['lastName']}!")
     else:
         print("User not found or already connected.")
 
-# Function to accept a friend request
-def acceptFriendRequest(username, friend_username):
-    if username in PENDING_REQUESTS.get(friend_username, []):
-        ALL_STUDENT_ACCOUNTS[username]['friends'].append(friend_username)
-        ALL_STUDENT_ACCOUNTS[friend_username]['friends'].append(username)
-        PENDING_REQUESTS[friend_username].remove(username)
-        print(f"You are now connected with {ALL_STUDENT_ACCOUNTS[friend_username]['firstName']} {ALL_STUDENT_ACCOUNTS[friend_username]['lastName']}!")
-    else:
-        print("Friend request not found.")
+def searchByCriteria(criteria, value):
+    return [info for _, info in ALL_STUDENT_ACCOUNTS.items() if info[criteria] == value]
 
-# Function to reject a friend request
-def rejectFriendRequest(username, friend_username):
-    if username in PENDING_REQUESTS.get(friend_username, []):
-        PENDING_REQUESTS[friend_username].remove(username)
-        print(f"Friend request from {ALL_STUDENT_ACCOUNTS[friend_username]['firstName']} {ALL_STUDENT_ACCOUNTS[friend_username]['lastName']} has been rejected.")
-    else:
-        print("Friend request not found.")
 
-# Function to disconnect from a friend
-def disconnectFromFriend(username, friend_username):
-    if friend_username in ALL_STUDENT_ACCOUNTS[username]['friends']:
-        ALL_STUDENT_ACCOUNTS[username]['friends'].remove(friend_username)
-        ALL_STUDENT_ACCOUNTS[friend_username]['friends'].remove(username)
-        print(f"You have disconnected from {ALL_STUDENT_ACCOUNTS[friend_username]['firstName']} {ALL_STUDENT_ACCOUNTS[friend_username]['lastName']}.")
-    else:
-        print("Friend not found in your list.")
+def pendingFriendRequests(username):
+    if username in ALL_STUDENT_ACCOUNTS:
+        return ALL_STUDENT_ACCOUNTS[username]['friendRequests']
+    return []
 
+def acceptFriendRequest(sender_username, receiver_username):
+    if sender_username in ALL_STUDENT_ACCOUNTS[receiver_username]['friendRequests']:
+        ALL_STUDENT_ACCOUNTS[receiver_username]['friends'].append(sender_username)
+        ALL_STUDENT_ACCOUNTS[receiver_username]['friendRequests'].remove(sender_username)
+        ALL_STUDENT_ACCOUNTS[sender_username]['friends'].append(receiver_username)
+
+def declineFriendRequest(sender_username, receiver_username):
+    if sender_username in ALL_STUDENT_ACCOUNTS[receiver_username]['friendRequests']:
+        ALL_STUDENT_ACCOUNTS[receiver_username]['friendRequests'].remove(sender_username)
+
+def disconnectFriend(sender_username, receiver_username):
+    if receiver_username in ALL_STUDENT_ACCOUNTS[sender_username]['friends']:
+        ALL_STUDENT_ACCOUNTS[sender_username]['friends'].remove(receiver_username)
+        ALL_STUDENT_ACCOUNTS[receiver_username]['friends'].remove(sender_username)

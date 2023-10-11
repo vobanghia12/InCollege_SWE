@@ -2,12 +2,10 @@ import accountFunctions
 import menuFunctions
 import sys
 
-from accountFunctions import acceptFriendRequest, rejectFriendRequest, disconnectFromFriend
-
-
 # Starting boolean assuming when you first use it nobody is logged in
 isLoggedIn = False
 global fName, lName, connections
+fName, lName = None, None
 connections = []
 
 
@@ -20,6 +18,14 @@ def login_function():
         lName = accountFunctions.ALL_STUDENT_ACCOUNTS[username]['lastName']
         isLoggedIn = True
         print("You have successfully logged in.\n")
+        
+        # Checking for pending friend requests
+        pending_requests = accountFunctions.pendingFriendRequests(username)
+        if pending_requests:
+            print(f"You have {len(pending_requests)} pending friend requests!\n")
+            for request in pending_requests:
+                print(f"From: {request}")
+            
         return menuFunctions.main_menu(fName, lName)
     else:
         x = input("Incorrect username/password. Input 1 to try again, or input 2 to return to menu.\n")
@@ -27,6 +33,7 @@ def login_function():
             login_function()
         elif x == '2':
             main()
+
 
 
 def create_account():
@@ -187,7 +194,7 @@ def display_important_links():
 
     if choice == "1":
         print("InCollege© copyright-2023")
-        choice == return_to_important_links()
+        choice = return_to_important_links()
         if choice == True:
             display_important_links()
         else:
@@ -236,6 +243,7 @@ def display_important_links():
 
 def main():
     global isLoggedIn
+    global fName, lName
     #global fName, lName
 
     while True:
@@ -276,10 +284,10 @@ def main():
         # User is logged in
         else:
             return menuFunctions.main_menu(fName, lName)
-        
+
+
 if __name__ == '__main__':
     # Call main and check if returned to
     main()
     if main() == 'toMain':
         main()
-        

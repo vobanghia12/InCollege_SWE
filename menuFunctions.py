@@ -1,7 +1,8 @@
 # import accounts
+import accountFunctions
 
-from accountFunctions import ALL_STUDENT_ACCOUNTS, acceptFriendRequest, rejectFriendRequest, disconnectFromFriend
 
+from accountFunctions import ALL_STUDENT_ACCOUNTS
 # initialize dictionary for posted jobs
 POSTED_JOBS = {}
 
@@ -11,11 +12,13 @@ MAX_STUDENT_ACCOUNTS = 10
 # Ensure ALL_STUDENT_ACCOUNTS can handle the friends list for each student
 for student in ALL_STUDENT_ACCOUNTS:
     ALL_STUDENT_ACCOUNTS[student]["friends"] = []
+    ALL_STUDENT_ACCOUNTS[student]["friendRequests"] = []
+
     
     
 # Main menu function
 def main_menu(firstName, lastName):
-    global fName, lName
+    global fName, lName, current_logged_in_username
     fName, lName = firstName, lastName
 
     print("\nMain Menu:")
@@ -25,10 +28,14 @@ def main_menu(firstName, lastName):
     print("4. Useful Links")
     print("5. InCollege Important Links")
     print("6. Manage Friend Requests")
-    print("7. Manage Network")
+    print("7. Show My Network")
     print("8. Sign out")
+    
+    matched_users = [key for key, value in ALL_STUDENT_ACCOUNTS.items() if value['firstName'] == fName and value['lastName'] == lName]
+    current_logged_in_username = matched_users[0] if matched_users else None
 
-    optionChoice = input("Select an option: ")
+
+    optionChoice = input("Select a option: ")
 
     if optionChoice == '1':
         job_search()
@@ -43,14 +50,12 @@ def main_menu(firstName, lastName):
     elif optionChoice == '6':
         manage_friend_requests()
     elif optionChoice == '7':
-        manage_network()
+        show_my_network()
     elif optionChoice == '8':
         return 'toMain'
     else:
         print("Invalid input")
         main_menu(fName, lName)
-
-
 
 def useful_links_menu():
     print("\nUseful Links:")
@@ -269,6 +274,7 @@ def search(key):
             send_request = input("Send request to connect? (yes/no): ")
             if send_request.lower() == "yes":
                 print(f"Connection request sent to {info['firstName']} {info['lastName']}")
+                ALL_STUDENT_ACCOUNTS[student]["friendRequests"].append(current_logged_in_username)
     if not found:
         print("No student found.")
     find()
@@ -308,64 +314,82 @@ def learning_sew_skill():
     else:
         print("Invalid input")
         learning_sew_skill()
-
-# Function to manage friend requests
+        
 def manage_friend_requests():
-    print("\nManage Friend Requests:")
-    print("1. Display Pending Friend Requests")
-    print("2. Accept a Friend Request")
-    print("3. Reject a Friend Request")
-    print("4. Return to Main Menu")
+    global current_logged_in_username
+    if current_logged_in_username not in ALL_STUDENT_ACCOUNTS:
+        print("Error retrieving friend requests.")
+        return
+    
+    requests = ALL_STUDENT_ACCOUNTS[current_logged_in_username].get('friendRequests', [])
 
-    choice = input("Select an option: ")
+    
+    if not requests:
+        print("You have no pending friend requests.")
+        return
+    
+    print("Pending Friend Requests:")
+    for idx, req in enumerate(requests, 1):
+        print(f"{idx}. {req}")
+    
+    choice = input("Enter the number of the request you'd like to manage or 0 to go back: ")
+    if choice == "0":
+        return
 
-    if choice == "1":
-        displayPendingRequests(fName)  # Display pending friend requests for the logged-in user
-    elif choice == "2":
-        acceptFriendRequest()
-    elif choice == "3":
-        rejectFriendRequest()
-    elif choice == "4":
-        main_menu(fName, lName)
+    if 0 < int(choice) <= len(requests):
+        selected_request = requests[int(choice) - 1]
+        decision = input(f"Do you want to accept {selected_request}'s friend request? (yes/no): ")
+        if decision.lower() == "yes":
+            ALL_STUDENT_ACCOUNTS[current_logged_in_username]["friends"].append(selected_request)
+            ALL_STUDENT_ACCOUNTS[selected_request]["friends"].append(username)
+        ALL_STUDENT_ACCOUNTS[username]["friendRequests"].remove(selected_request)
+        if decision.lower() == "yes":
+            print(f"You are now connected with {selected_request}.")
+        else:
+            print(f"You have declined {selected_request}'s friend request.")
     else:
-        print("Invalid choice.")
+        print("Invalid selection.")
         manage_friend_requests()
 
-# Function to manage the user's network
-def manage_network():
-    print("\nManage Network:")
-    print("1. Display Your Network")
-    print("2. Disconnect from a Friend")
-    print("3. Return to Main Menu")
 
-    choice = input("Select an option: ")
+def show_my_network():
+    if current_logged_in_username not in ALL_STUDENT_ACCOUNTS:
+        print("Error retrieving your network.")
+        return
 
-    if choice == "1":
-        displayNetwork(fName)  # Display the user's network
-    elif choice == "2":
-        disconnectFromFriend()
-    elif choice == "3":
-        main_menu(fName, lName)
-    else:
-        print("Invalid choice.")
-        manage_network()
+    friends = ALL_STUDENT_ACCOUNTS[current_logged_in_username].get('friends', [])
 
+    if not friends:
+        print("You have no connections in your network.")
+        return
 
-# Function to display pending friend requests
-def displayPendingRequests(username):
-    if username in accountFunctions.PENDING_REQUESTS:
-        print("\nPending Friend Requests:")
-        for requester in accountFunctions.PENDING_REQUESTS[username]:
-            print(f"- {ALL_STUDENT_ACCOUNTS[requester]['firstName']} {ALL_STUDENT_ACCOUNTS[requester]['lastName']}")
-    else:
-        print("\nNo pending friend requests.")
+    print("\nYour Network:")
+    for idx, friend in enumerate(friends, 1):
+        friend_info = ALL_STUDENT_ACCOUNTS[friend]
+        print(f"{idx}. {friend_info['firstName']} {friend_info['lastName']} ({friend})")
 
-# Function to display the user's network
-def displayNetwork(username):
-    friends = ALL_STUDENT_ACCOUNTS[username]['friends']
-    if friends:
-        print("\nYour Network:")
-        for friend_username in friends:
-            print(f"- {ALL_STUDENT_ACCOUNTS[friend_username]['firstName']} {ALL_STUDENT_ACCOUNTS[friend_username]['lastName']}")
-    else:
-        print("\nYour network is empty.")
+    while True:
+        choice = input("\nEnter the number of the friend you'd like to disconnect from or 0 to go back: ")
+
+        try:
+            choice = int(choice)
+            if choice == 0:
+                return
+
+            if 0 < choice <= len(friends):
+                selected_friend = friends[choice - 1]
+                decision = input(f"Do you really want to disconnect from {ALL_STUDENT_ACCOUNTS[selected_friend]['firstName']} {ALL_STUDENT_ACCOUNTS[selected_friend]['lastName']} ({selected_friend})? (yes/no): ")
+
+                if decision.lower() == "yes":
+                    ALL_STUDENT_ACCOUNTS[current_logged_in_username]["friends"].remove(selected_friend)
+                    ALL_STUDENT_ACCOUNTS[selected_friend]["friends"].remove(current_logged_in_username)
+                    print(f"You are now disconnected from {ALL_STUDENT_ACCOUNTS[selected_friend]['firstName']} {ALL_STUDENT_ACCOUNTS[selected_friend]['lastName']}.")
+                    # Refresh the list after disconnection
+                    show_my_network()
+                    break
+                else:
+                    print("No changes were made.")
+            else:
+                print("Invalid selection.")
+        except ValueError:
+            print("Please enter a valid number.")

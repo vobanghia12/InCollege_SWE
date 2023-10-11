@@ -29,7 +29,7 @@ class TestPrivacyFunction(unittest.TestCase):
     @patch("builtins.input")
     def test_guest_controls_setting(self, mock_input):
         # Simulate user selecting Privacy Policy and then Guest Controls option
-        mock_input.side_effect = ["3", "2"]
+        mock_input.side_effect = ["3", "2"]  
         main.isLoggedIn = True
         with patch('menuFunctions.main_menu', return_value='toMain'):
             main.main()
@@ -38,7 +38,7 @@ class TestPrivacyFunction(unittest.TestCase):
         mock_input.side_effect = ["1", "2", "3"]
         with patch('menuFunctions.main_menu', return_value='toMain'):
             result = main.main()
-
+        
         # Check if the settings are updated in the accountFunctions module
         user_info = accountFunctions.ALL_STUDENT_ACCOUNTS[self.username]
         self.assertFalse(user_info['Email'])
